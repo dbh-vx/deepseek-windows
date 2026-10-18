@@ -1,0 +1,2 @@
+# deepseek-windows
+Deepseek Windows
