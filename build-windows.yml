@@ -1,0 +1,41 @@
+name: Build DeepSeek for Windows
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies and PyInstaller
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt pyinstaller
+      - name: Build Windows executable
+        run: python -m PyInstaller --noconfirm --clean deepseek.spec
+      - name: Package executable
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path package | Out-Null
+          Copy-Item dist/deepseek.exe package/deepseek.exe
+          Copy-Item README.txt package/README.txt -ErrorAction SilentlyContinue
+          @'
+          Run deepseek.exe on Windows 10/11. On first launch, enter your DeepSeek API Key.
+          The app does not enable Windows startup automatically.
+          Microphone speech recognition uses Google's online service and requires internet access.
+          '@ | Set-Content package/使用说明.txt -Encoding UTF8
+          Compress-Archive -Path package/* -DestinationPath deepseek-windows-x64.zip -Force
+      - name: Upload Windows package
+        uses: actions/upload-artifact@v4
+        with:
+          name: deepseek-windows-x64
+          path: deepseek-windows-x64.zip
+          retention-days: 14
